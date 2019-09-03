@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from mpl_toolkits.mplot3d import Axes3D
 
 def FrankeFunction(x, y, Noise=False):
     """
@@ -19,28 +22,73 @@ def FrankeFunction(x, y, Noise=False):
     else:
         return z
 
-def Least_Square_Regression(x_data, y_data, DEG=2):
+def DesignMatrix(x, y, n=2):
     """
-    Returns coefficients of polynomial fitting the
+    Returns design matrix with rows on the form [1, x, y, x^2, xy, y^2, ...].
+    x and y are 1darrays.
+    n is optional int specifying degree of fitting polynom.
+    """
+
+    col = int((n+1)*(n+2)/2)                #Number of needed columns
+    X = np.ones((len(x), col))              #Design matrix
+
+    for i in range(1, n+1):
+        s = int(i*(i+1)/2)
+        for j in range(i+1):
+            X[:, s+j] = x**(i-j)*y**(j)     #Fitting the column vectors
+
+    return X
+
+def OLS(X, z_data):
+    """
+    Returns the coefficients beta of polynomial fitting the
     least square reggresion.
-    DEG is int parameter for choosing the polynomial degree.
+    Inputs design matrix X and column vector z_data.
     """
 
-    #Fitting x_data, y_data to the vandermonde matrix (X)
-    X = np.zeros((len(x_data), DEG))
-    X[:,0] = 1
-    for n in range(1, deg):
-        X[:,n] = [xn for xn in x_data**n]
+    #Solving the least squares lin. alg. problem
+    beta = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(z_data)
 
-    #Solving
-    coeff = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(y_data)
+    return beta
 
-    return coeff
+def Polynom(x, y, coeff, n=2):
+    """
+    """
 
+    z = coeff[0]                            #Constant term
+    for i in range(1, n+1):
+        s = int(i*(i+1)/2)
+        for j in range(i+1):
+            z += coeff[s+j]*x**(i-j)*y**(j) #Other terms
+
+    return z
 
 
 if __name__ == '__main__':
-    print(FrankeFunction(1,1, Noise=True))
-    x_data = np.linspace(0, 1, 100)
-    y_data = FrankeFunction()
-    print(Least_Square_Regression())
+    #Make data.
+    x = np.linspace(0, 1, 25)
+    y = np.linspace(0, 1, 25)
+    x, y = np.meshgrid(x, y)
+
+
+    #OLS regression with plots
+    X = DesignMatrix(np.ravel(x), np.ravel(y), n=5)
+    z = FrankeFunction(np.ravel(x), np.ravel(y))
+    beta = OLS(X, z)
+    z_OLS = Polynom(x, y, beta, n=5)
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(x, y, z_OLS, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+    plt.show()
+
+    #FrankeFunction plot
+    z_F = FrankeFunction(x, y)
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(x, y, z_F, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+    plt.show()
+
+    print(z_OLS[0], 2*"\n", z_F[0])
