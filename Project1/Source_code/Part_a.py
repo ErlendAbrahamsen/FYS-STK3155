@@ -1,7 +1,8 @@
 import numpy as np
+from sklearn.metrics import mean_squared_error, r2_score
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
 
 def FrankeFunction(x, y, Noise=False):
@@ -53,6 +54,9 @@ def OLS(X, z_data):
 
 def Polynom(x, y, coeff, n=2):
     """
+    Returns ndarray of points from our fitted continouse polynom.
+    Inputs x and y points (ndarray), 1darray of coefficients, and
+    optional int argument n for the polynom degree.
     """
 
     z = coeff[0]                            #Constant term
@@ -63,6 +67,23 @@ def Polynom(x, y, coeff, n=2):
 
     return z
 
+def MSE(z_true, z_pred):
+    """
+    Inputs two data sets and returns mean squared error
+    """
+
+    return 1/z_true.size*np.sum((z_true - z_pred)**2)
+
+def R2(z_true, z_pred):
+    """
+    Inputs two data sets and returns the R^2 score
+    """
+
+    avg = np.mean(z_true)
+    s1 = np.sum((z_true - z_pred)**2)
+    s2 = np.sum((z_true - avg)**2)
+
+    return 1 - s1/s2
 
 if __name__ == '__main__':
     #Make data.
@@ -71,17 +92,27 @@ if __name__ == '__main__':
     x, y = np.meshgrid(x, y)
 
 
-    #OLS regression with plots
-    X = DesignMatrix(np.ravel(x), np.ravel(y), n=5)
-    z = FrankeFunction(np.ravel(x), np.ravel(y))
-    beta = OLS(X, z)
-    z_OLS = Polynom(x, y, beta, n=5)
+    #OLS regression of degree 1...n with plots
+    n = 5
+    Noise = False
+    for n in range(1, n+1):
+        X = DesignMatrix(np.ravel(x), np.ravel(y), n=n)
+        z = FrankeFunction(np.ravel(x), np.ravel(y), Noise=Noise)
+        beta = OLS(X, z)
+        z_OLS = Polynom(x, y, beta, n=n)
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(x, y, z_OLS, cmap=cm.coolwarm,
-                           linewidth=0, antialiased=False)
-    plt.show()
+        #Set up a plot
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        surf = ax.plot_surface(x, y, z_OLS, cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False)
+
+        ax.set_zlim(-0.10, 1.40)
+        labels = (ax.set_xlabel("x-axis"), ax.set_ylabel("y-axis"),
+                    ax.set_zlabel("z-axis"), ax.set_title("n=%d Franke-OLS, Noise=%s" % (n, str(Noise))))
+
+        fig.colorbar(surf, shrink=0.5, aspect=4)
+        plt.savefig("OLS_n%d_N%s.png" % (n, Noise))
 
     #FrankeFunction plot
     z_F = FrankeFunction(x, y)
@@ -89,6 +120,18 @@ if __name__ == '__main__':
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(x, y, z_F, cmap=cm.coolwarm,
                            linewidth=0, antialiased=False)
-    plt.show()
 
-    print(z_OLS[0], 2*"\n", z_F[0])
+    ax.set_zlim(-0.10, 1.40)
+    labels = (ax.set_xlabel("x-axis"), ax.set_ylabel("y-axis"),
+                ax.set_zlabel("z-axis"), ax.set_title("FrankeFunction"))
+
+    fig.colorbar(surf, shrink=0.5, aspect=4)
+    plt.savefig("FrankeFunction.png")
+
+    #print(MSE(z_F, z_OLS))
+    #print(mean_squared_error(z_F, z_OLS))
+    #print(R2(z_F[0], z_OLS[0]))
+    #print(r2_score(z_F[0],z_OLS[0]))
+    #print(np.sum((z_F-0.1)**2))
+
+    #Confidence intervall of beta
