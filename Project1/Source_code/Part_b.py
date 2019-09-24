@@ -8,11 +8,20 @@ def KFold(x, y, z, k=10):
     Go trough all partitions and store them in lists of ndarrays.
     """
 
-    X_train, X_test, Y_train, Y_test, Z_train, Z_test = [], [], [], [], [], []
-
+    #Shuffle the data
     n = len(x)
+    r = np.arange(x.size)             #Indices of x/y/z
+    np.random.shuffle(r)              #Random shuffle of indices
+    x = [np.ravel(x)[i] for i in r]   #Shuffle same indices on x, y and z
+    y = [np.ravel(y)[i] for i in r]
+    z = [np.ravel(z)[i] for i in r]
+    x, y, z = (np.array(x).reshape((n, n)), np.array(y).reshape((n, n)),
+               np.array(z).reshape((n, n)))
+
+    X_train, X_test, Y_train, Y_test, Z_train, Z_test = [], [], [], [], [], []
     p = int(n/k)  #Length of each partition
 
+    #Divide into k equal folds
     for i in range(k):
         x_test, y_test, z_test = x[p*i:p*(i+1)], y[p*i:p*(i+1)], z[p*i:p*(i+1)]  # p rows
         x_train = np.append(x[:p*i], x[p*(i+1):], axis=0)                        # n - p rows
@@ -28,7 +37,7 @@ def KFold(x, y, z, k=10):
 def CrossVal(Z_test, Z_pred):
     """
     Crossvalidate our data.
-    Returns avrage MSE and R2 score of data with k different partitions.
+    Returns average MSE and R2 score of data with k different partitions.
     """
 
     MSE_sum, R2_sum, n = 0, 0, len(Z_test)
@@ -47,17 +56,6 @@ if __name__ == '__main__':
     x, y = np.meshgrid(x, y)
     z = FrankeFunction(x, y)
 
-    #Unit test ????
-    #print(x.shape)
-    #t = np.arange(10)
-    #n = 4
-    #p = int(t.size/n)
-    #print(p)
-    #for i in range(n):
-    #    print(t[p*i:p*(i+1)])
-    #    print(np.append(t[:p*i], t[p*(i+1):], axis=0))
-
-
     X_train, X_test, Y_train, Y_test, Z_train, Z_test = KFold(x,y,z)
 
     #Fitting all partitions to OLS model
@@ -74,5 +72,3 @@ if __name__ == '__main__':
     #Partition scores
     avg_MSE, avg_R2 = CrossVal(Z_test, Z_pred)
     print(avg_MSE, avg_R2)
-
-    #x_train, x_test, y_train, y_test, z_train, z_test = train_test_split(x, y, z, test_size=0.2)
