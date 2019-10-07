@@ -1,31 +1,25 @@
 import numpy as np
-from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.model_selection import train_test_split
 
-def FrankeFunction(x, y, Noise=False):
+def FrankeFunction(x, y):
     """
-    Franke function with optional normal distrubited noise.
-    Noise is boolean parameter and adds normal distrubited
-    noise if set to True.
+    Franke function
     """
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
     term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
     term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
     term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 
-    z = term1 + term2 + term3 + term4
-
-    if Noise:
-        return z + np.random.randn()
-    else:
-        return z
+    return term1 + term2 + term3 + term4
 
 def DesignMatrix(x, y, n=5):
     """
-    Returns design matrix with rows on the form [1, x, y, x^2, xy, y^2, ...].
+    Returns design matrix with rows on the form
+    [1, x, y, x^2, xy, y^2, ..., x^n, x^(n-1)y, x^(n-2)y^2, ..., y^n].
     x and y are 1darrays.
     n is optional int specifying degree of fitting polynom.
     """
@@ -57,6 +51,7 @@ def Polynom(x, y, coeff, n=5):
     Returns ndarray of points from our fitted continouse polynom.
     Inputs x and y points (ndarray), 1darray of coefficients, and
     optional int argument n for the polynom degree.
+    Matches coefficient setup of DesignMatrix!
     """
 
     z = coeff[0]                            #Constant term
@@ -72,12 +67,16 @@ def MSE(z_true, z_pred):
     Inputs two data sets and returns mean squared error
     """
 
-    return 1/z_true.size*np.sum((z_true - z_pred)**2)
+    z_true, z_pred = np.ravel(z_true), np.ravel(z_pred) #Ravel to be sure
+
+    return np.mean((z_true - z_pred)**2)
 
 def R2(z_true, z_pred):
     """
     Inputs two data sets and returns the R^2 score
     """
+
+    z_true, z_pred = np.ravel(z_true), np.ravel(z_pred)
 
     avg = np.mean(z_true)
     s1 = np.sum((z_true - z_pred)**2)
@@ -85,10 +84,9 @@ def R2(z_true, z_pred):
 
     return 1 - s1/s2
 
-def MyPlot(x, y, z, title,
-            zlim=(-0.10, 1.40), shrink=0.5, aspect=4):
+def MyPlot(x, y, z, title="", shrink=0.5, aspect=4):
     """
-    Plotting method with features fitting our problem
+    3D plotting method with features fitting our situation
     """
 
     #Set up a 3d plot
@@ -97,7 +95,6 @@ def MyPlot(x, y, z, title,
     surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
                             linewidth=0, antialiased=False)
 
-    ax.set_zlim(zlim)
     labels = (ax.set_xlabel("x-axis"), ax.set_ylabel("y-axis"),
                 ax.set_zlabel("z-axis"), ax.set_title(title))
 
@@ -105,39 +102,48 @@ def MyPlot(x, y, z, title,
 
     return True
 
+#Make data importable to other parts
+n = 50
+l = np.linspace(0, 1, n)
+x, y = np.meshgrid(l, l)
+
+np.random.seed(1)                    #produce same N(0, 1) each run
+eps = np.random.normal(0, 1, (n, n)) #(n, n) matrix of N(0,1)
+f = FrankeFunction(x, y)             #Real continouse realationship
+z = f + eps                          #Data with N(0,1) noise
+
 if __name__ == '__main__':
-    #Make data.
-    n = 25
-    x = np.linspace(0, 1, n)
-    y = np.linspace(0, 1, n)
-    x, y = np.meshgrid(x, y)
-
-
-    #OLS regression of degree 1...n with plots
-    n = 5
-    Noise = False
+    ##OLS regression of degree 1...n with plots
+    n = 5 #Polynom degree
+    mse, r2 = [], []
     for n in range(1, n+1):
         X = DesignMatrix(np.ravel(x), np.ravel(y), n=n)
-        z = FrankeFunction(np.ravel(x), np.ravel(y), Noise=Noise)
-        beta = OLS(X, z)
-        z_OLS = Polynom(x, y, beta, n=n)
+        beta = OLS(X, np.ravel(z))
+        z_OLS = np.dot(X, beta) #Prediciton
 
-        #Set up a plot
-        title = "n=%d Franke-OLS, Noise=%s" % (n, str(Noise))
-        MyPlot(x, y, z_OLS, title)
-        #plt.savefig("OLS_n%d_N%s.png" % (n, Noise))
-        #plt.show()
+        mse.append(MSE(f, z_OLS)), r2.append(R2(f, z_OLS))
+
+        ##OLS plot
+        title = "n=%d Franke-OLS, Noise=True" % n
+        MyPlot(x, y, z_OLS.reshape((len(x), len(x))), title=title)
+        #plt.savefig("OLS_n%d_Noise.png" % n)
+        plt.show()
 
     ##FrankeFunction plot
-    z_F = FrankeFunction(x, y)
-    MyPlot(x, y, z_F, "FrankeFunction")
-    #plt.savefig("OLS_n%d_N%s.png" % (n, Noise))
-    #plt.show()
+    MyPlot(x, y, f, "FrankeFunction")
+    #plt.savefig("Franke.png")
+    plt.show()
 
-    #UNIT TEST??
-    print(MSE(z_F, z_OLS))
-    print(mean_squared_error(z_F, z_OLS))
-    print(R2(z_F, z_OLS))
-    print(r2_score(np.ravel(z_F), np.ravel(z_OLS)))
+    ##Confidence intervall of beta (n=5)
+    z_ = 1.96              #95% CI
+    n = np.sqrt(z.size)    #root of sample size
+    CI = [(np.round(coeff-z_*np.std(beta)/n, decimals=2),
+           np.round(coeff+z_*np.std(beta)/n, decimals=2)) for coeff in beta]
+    CI_table = pd.DataFrame({"betas": np.arange(len(beta)),
+                             "95% CI": CI})
 
-    #Confidence intervall of beta
+    print(CI_table, "\n\n")
+
+    n = 5
+    for n in range(1, n+1):
+        print("n=%d: MSE=%.4g, R2=%.4g " % (n, mse[n-1], r2[n-1]))
