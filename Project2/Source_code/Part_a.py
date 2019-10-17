@@ -9,16 +9,16 @@ def creditDataReduction(creditData):
     data set.
     """
 
-    #Check X2, X3, X4, X6-X11
+    #Check if X2, X3, X4, X6-X11 data is in Expected
     X = ["X2", "X3", "X4"]
-    ExpectedOut = [[1, 2], [1, 2, 3, 4], [1, 2, 3]]
+    Expected = [[1, 2], [1, 2, 3, 4], [1, 2, 3]]
     for i in range(6,12):
         X.append("X%d" % i) #X6-X11
         exp = np.concatenate([ [-1], np.arange(1,10) ] ) #[-1,1,2,...,9]
-        ExpectedOut.append(exp)
+        Expected.append(exp)
 
     FAILS = []  #List for containing index with outlier
-    for Xi, Yi in zip(X, ExpectedOut):
+    for Xi, Yi in zip(X, Expected):
         test = np.isin(creditData[Xi][1:], Yi)
         fails = np.where(test == False)[0]
 
@@ -38,17 +38,26 @@ def creditDataReduction(creditData):
 
     FAILS = np.concatenate(FAILS)
     ids = FAILS + 1
-    creditData = creditData.drop(ids)
+    creditData = creditData.drop(ids)   #Dropping id's with outlier
 
     return creditData
+
+
 
 #CLS credit card data mapping X -> y
 creditData = pd.read_excel("credit.xls")
 creditData = creditDataReduction(creditData) #Remove outliers
 
-X = np.array(creditData)[1:, :]              #Convert pandas dataframe to ndarray
-y = X[:,-1].reshape(-1,1)                    #y vector
-X = X[:, :-1]                                #X as (n, 23) matrix. (X1,X2,...,X23)
+Data = np.array(creditData)[1:, :]           #Excluding row 0 with strings.
+row, col = np.shape(Data)
+X = np.ones((row, col))
+
+y = Data[:,-1].reshape(-1,1)                 #y column vector
+X[:, 1:] = Data[:, :-1]                      #Design matrix (n, 24)
 
 #Franke data mapping (xf, yf) -> fData
 xf, yf, fData = frankeData()
+
+if __name__ == '__main__':
+    print("y:", np.shape(y), "\n")
+    print("X:", np.shape(X))
