@@ -55,9 +55,17 @@ X = np.ones((row, col))
 y = Data[:,-1].reshape(-1,1)                 #y column vector
 X[:, 1:] = Data[:, :-1]                      #Design matrix (n, 24)
 
-#Franke data mapping (xf, yf) -> fData
-xf, yf, fData = frankeData()
-
 if __name__ == '__main__':
-    print("y:", np.shape(y), "\n")
-    print("X:", np.shape(X))
+    #Test of y values in range (0 or 1)
+    sum = np.sum(y==0) + np.sum(y==1)
+    if sum != y.size: print("y not in range")
+
+    #X, y shapes
+    print("y shape:", np.shape(y))
+    print("X shape:", np.shape(X), "\n")
+
+    #Precentage of creditable and non-creditable costumers
+    cred = np.sum(y==0)/y.size
+    non_cred = np.sum(y==1)/y.size
+    print("Creditable: %.3f %%" % cred)
+    print("Non-creditable: %.3f %%" % non_cred)
