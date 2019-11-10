@@ -22,10 +22,11 @@ def dlogcost(X, y, beta):
 
 def newtonsMethod(X, y, k=0.4, max_iter=1e2, tol=1e-3):
     """
-    Newtons method with optional step size k.
+    Newtons method with step size k.
+    Returns beta coeficients
     """
 
-    #Random seed to avoid singular matrix
+    #Random seed for consistent beta intialization
     np.random.seed(2)
     p = np.shape(X)[1]
     beta = np.random.normal(0, 10, (p, 1)) #Random guess
@@ -48,7 +49,7 @@ def newtonsMethod(X, y, k=0.4, max_iter=1e2, tol=1e-3):
 
 def logfunc(X, beta):
     """
-    Sigmoid/log function, input/output is scaler or arraylike.
+    Sigmoid/log function, input/output is scalar or arraylike.
     """
 
     Xb = np.array(np.dot(X, beta), dtype=np.float32)
@@ -116,7 +117,21 @@ if __name__ == '__main__':
     plt.plot(np.arange(n), Test_acc, label="test", color="y")
     plt.plot([0, n], [test_acc, test_acc], label="avg-test", linestyle=":", color="y")
     plt.xlabel("n"), plt.ylabel("accuracy %")
-    #plt.legend(), plt.grid(), plt.show()
+    plt.legend(), plt.grid(), plt.show()
+
+    #False-negative and false-positive error rates
+    y_pred, yt = np.ravel(p_test), np.ravel(y_test)
+    y_pred[y_pred >= 0.5] = 1   #predict
+    y_pred[y_pred < 0.5] = 0
+
+    one_indices = np.where(yt==1)
+    zero_indices = np.where(yt==0)
+
+    one_error = np.sum(y_pred[one_indices] == 0)/len(one_indices[0])
+    zero_error = np.sum(y_pred[zero_indices] == 1)/len(zero_indices[0])
+
+    print("Class 1 error: %.3f" % one_error)
+    print("Class 0 error: %.3f" % zero_error)
 
     #ROC curves
     p_test = np.ravel(p_test)
