@@ -1,0 +1,11 @@
+Average Accuracy with split threshold = 0.400
+Training: 0.777
+Testing: 0.776 
+
+Average Accuracy with split threshold = 0.500
+Training: 0.781
+Testing: 0.779 
+
+Average Accuracy with split threshold = 0.600
+Training: 0.773
+Testing: 0.773 
