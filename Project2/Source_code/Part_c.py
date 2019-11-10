@@ -293,42 +293,42 @@ def to_categorical_numpy(integer_vector):
 
 if __name__ == '__main__':
     X = X[:, 1:]
-    #X *= 1/np.max(X)
+    #Standardize features
     X = preprocessing.StandardScaler().fit(X).transform(X)
-    #X = preprocessing.Normalizer().fit(X).transform(X)
     y = to_categorical_numpy(np.array(np.ravel(y), dtype=np.int))
 
+    #Grid search (tanh with mse cost)
     etas, lmbds = np.logspace(-5, 0, 6), np.logspace(-5, 0, 6)
     activation, cost = "tanh", "mse"
     NN, test_scores, train_scores = grid_search(X, y, etas, lmbds, activation=activation, cost=cost)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots()    #Train acc plot
     sns.heatmap(train_scores, annot=True, ax=ax, cmap="viridis")
     ax.set_title("%s with %s cost: Training Accuracy" % (activation, cost))
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots()    #Test acc plot
     sns.heatmap(test_scores, annot=True, ax=ax, cmap="viridis")
     ax.set_title("%s with %s cost: Test Accuracy" % (activation, cost))
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
-    ##Confusion matrix and false positive/negative rates
-    #eta, lmbd = 1e-3, 1e-1
-    #activation, cost = "sigmoid", "log"
-    #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True, random_state=1)
+    #Best false positive/negative rates (sigmoid logcost)
+    eta, lmbd = 1e-3, 1e-1
+    activation, cost = "sigmoid", "log"
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True, random_state=1)
 
-    #nn = NeuralNetwork(X_train, y_train, eta=eta, lmbd=lmbd, n_hidden_neurons=100,
-    #                   n_hidden_layers=4, activation=activation, cost=cost, epochs=100)
-    #nn.train()
-    #y_pred = np.ravel(nn.predict(X_test))
-    #y_test = np.ravel(y_test[:, 1])
+    nn = NeuralNetwork(X_train, y_train, eta=eta, lmbd=lmbd, n_hidden_neurons=100,
+                       n_hidden_layers=4, activation=activation, cost=cost, epochs=100)
+    nn.train()
+    y_pred = np.ravel(nn.predict(X_test))
+    y_test = np.ravel(y_test[:, 1])
 
-    #tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-    #false_pos_rate = fp/(fp+tn)
-    #false_neg_rate = fn/(fn+tp)
-    #print("False-neg. rate: %.3f" % false_neg_rate)
-    #print("False-pos. rate: %.3f" % false_pos_rate)
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    false_pos_rate = fp/(fp+tn)
+    false_neg_rate = fn/(fn+tp)
+    print("False-neg. rate: %.3f" % false_neg_rate)
+    print("False-pos. rate: %.3f" % false_pos_rate)
