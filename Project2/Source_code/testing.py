@@ -99,14 +99,14 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()    #Train acc plot
     sns.heatmap(train_scores, annot=True, ax=ax, cmap="viridis")
-    ax.set_title("Training accuracy scores")
+    ax.set_title("Scikit Training accuracy scores")
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
     fig, ax = plt.subplots()    #Test acc plot
     sns.heatmap(test_scores, annot=True, ax=ax, cmap="viridis")
-    ax.set_title("Testing accuracy scores")
+    ax.set_title("Scikit Testing accuracy scores")
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
@@ -117,14 +117,14 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()    #Train mse plot
     sns.heatmap(train_mse, annot=True, ax=ax, cmap="viridis")
-    ax.set_title("Training MSE")
+    ax.set_title("Scikit Training MSE")
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
     fig, ax = plt.subplots()    #Test mse plot
     sns.heatmap(test_mse, annot=True, ax=ax, cmap="viridis")
-    ax.set_title("Testing MSE")
+    ax.set_title("Scikit Testing MSE")
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
