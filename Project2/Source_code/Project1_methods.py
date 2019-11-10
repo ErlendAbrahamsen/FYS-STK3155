@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 
 def f(x, y):
     """
@@ -22,9 +24,41 @@ def frankeData(n=50):
 
     l = np.linspace(0, 1, n)
     x, y = np.meshgrid(l, l)
+    x, y = np.ravel(x), np.ravel(y)
 
-    np.random.seed(1)                       #produce same N(0, 1) each run
-    eps = np.random.normal(0, 1, (n, n))    #(n, n) matrix of N(0,1)                #Real continouse realationship
+    np.random.seed(1)                             #produce same N(0, 1) each run
+    eps = np.random.normal(0, 1, n**2)            #n^2 points of N(0,1)
     z = f(x, y) + eps                             #Data with N(0,1) noise
 
-    return x, y, z
+    X = np.zeros((n**2, 2))
+    X[:, 0], X[:, 1] = np.ravel(x), np.ravel(y)   #(n^2, 2) matrix
+    z = np.ravel(z).reshape(-1, 1)                #(n^2, 1) vector
+
+    return X, z
+
+def MyPlot(x, y, z, title="", shrink=0.5, aspect=4):
+    """
+    3D plotting method with features fitting our situation
+    """
+
+    #Set up a 3d plot
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
+                            linewidth=0, antialiased=False)
+
+    labels = (ax.set_xlabel("x-axis"), ax.set_ylabel("y-axis"),
+                ax.set_zlabel("z-axis"), ax.set_title(title))
+
+    fig.colorbar(surf, shrink=shrink, aspect=aspect)
+
+    return True
+
+if __name__ == '__main__':
+    #Noised franke plot
+    X, z = frankeData()
+    z = np.ravel(z).reshape(50, 50)
+    x, y = X[:, 0].reshape(50, 50), X[:, 1].reshape(50, 50)
+
+    MyPlot(x, y, z, title="Noised franke plot")
+    plt.show()
