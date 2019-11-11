@@ -22,7 +22,7 @@ def regressor_grid_search(X, z, f, etas, lmbds, activation="sigmoid", cost="mse"
     for i, eta in enumerate(etas):
         for j, lmbd in enumerate(lmbds):
             nn = NeuralNetwork(X_train, z_train, type="regression", eta=eta, lmbd=lmbd, n_hidden_neurons=100,
-                            n_hidden_layers=2, activation=activation, cost=cost, epochs=200)
+                            n_hidden_layers=4, activation=activation, cost=cost, epochs=200)
             nn.train()
             NN[i, j] = nn
 
@@ -39,50 +39,37 @@ def regressor_grid_search(X, z, f, etas, lmbds, activation="sigmoid", cost="mse"
     return NN, test_mse, train_mse
 
 if __name__ == '__main__':
+    #Sigmoid, mse, grid search /w plots
     X, z = frankeData()
-    activation, cost = "tanh", "mse"
+    activation, cost = "sigmoid", "mse"
     etas, lmbds = np.logspace(-5, 0, 6), np.logspace(-5, 0, 6)
     NN, test_mse, train_mse = regressor_grid_search(X, z, f, etas, lmbds, activation=activation, cost=cost)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots()    #MSE(X_train, f_train)
     sns.heatmap(train_mse, annot=True, ax=ax, cmap="viridis", fmt=".3g")
-    ax.set_title("%s with %s cost: Training Accuracy" % (activation, cost))
+    ax.set_title("%s with %s cost: Training MSE" % (activation, cost))
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots()    #MSE(X_test, f_test)
     sns.heatmap(test_mse, annot=True, ax=ax, cmap="viridis", fmt=".3g")
-    ax.set_title("%s with %s cost: Test Accuracy" % (activation, cost))
+    ax.set_title("%s with %s cost: Testing MSE" % (activation, cost))
     ax.set_ylabel("$\eta$")
     ax.set_xlabel("$\lambda$")
     plt.show()
 
+    #Best result plot (tanh mse)
+    X, z = frankeData()
+    X_train, X_test, z_train, z_test = train_test_split(X, z, test_size=0.2, shuffle=True, random_state=1)
+    nn = NeuralNetwork(X_train, z_train, type="regression", eta=1e-4, lmbd=1e-1, n_hidden_neurons=50,
+               n_hidden_layers=2, epochs=200, activation="tanh", cost="mse")
+    nn.train()
+    z_pred = nn.predict(X)
 
-    #X_train, X_test, z_train, z_test = train_test_split(X, z, test_size=0.2, shuffle=True, random_state=1)
-    #X, z = frankeData()
-    #nn = NeuralNetwork(X_train, z_train, type="regression", eta=1e-3, lmbd=1e-2, n_hidden_neurons=100,
-    #           n_hidden_layers=4, activation="tanh", cost="mse")
-    #nn.train()
-    #z_pred = nn.predict(X_test)
+    x, y = X[:, 0].reshape(50, 50), X[:, 1].reshape(50, 50)
+    z = np.ravel(z_pred).reshape(50, 50)
 
-    #z = np.ravel(z_pred)
-    #ff = f(X_test[:, 0], X_test[:, 1])
-    #print(np.shape(z_test))
-    #print(mean_squared_error(np.ravel(z), np.ravel(ff)))
-
-    ##X, z = frankeData()
-    ##nn = NeuralNetwork(X, z, type="regression", eta=1e-3, lmbd=1e-2, n_hidden_neurons=100,
-    ##           n_hidden_layers=2, activation="tanh", cost="mse")
-    ##nn.train()
-    ##z_pred = nn.predict(X)
-
-    ##x, y = X[:, 0].reshape(50, 50), X[:, 1].reshape(50, 50)
-    ##z = np.ravel(z_pred).reshape(50, 50)
-    ##ff = f(X[:, 0], X[:, 1])
-    ##print(mean_squared_error(np.ravel(z), np.ravel(ff)))
-
-    ##MyPlot(x, y, z, title="NeuralNetwork regression")
-    ##plt.show()
-
-    #0.01038126244364785 mse#
+    MyPlot(x, y, z, title="NeuralNetwork regression")
+    MyPlot(x, y, f(x, y), title="True franke")
+    plt.show()
