@@ -10,9 +10,11 @@ Folder Source_code:
   
 	source code from each project part, Part_a.py etc.  
 	credit.xls (credit card data)  
-	Project1_methods (re-used methods from project 1)  
+	Project1_methods (re-used methods from project 1)
+	testing.py for unit test of NeuralNetwork and scikit comparison.
 
 Folder Results:  
   
 	Contains folders Part_a etc. with plots from each part.
+	Folder with scikit test results.
 
