@@ -91,8 +91,9 @@ if __name__ == '__main__':
     #Average prediction over n runs with prob >= split predicts 1.
     n, split = 10, 0.5
     Train_acc, Test_acc = [], []
+    false_neg, false_pos = 0, 0
     for i in range(n):
-        #Split into training and testing data
+        #Split into random training and testing data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True, random_state=i)
 
         #Training beta weights and getting probabilty predictions
@@ -103,13 +104,31 @@ if __name__ == '__main__':
         Train_acc.append(split_accuracy(y_train, p_train, p=split))
         Test_acc.append(split_accuracy(y_test, p_test, p=split))
 
-    #Average accuracy's
+        #False-negative and false-positive error rates
+        y_pred, yt = np.ravel(p_test), np.ravel(y_test)
+        y_pred[y_pred >= 0.5] = 1   #predict
+        y_pred[y_pred < 0.5] = 0
+
+        one_indices = np.where(yt==1)
+        zero_indices = np.where(yt==0)
+
+        false_neg += np.sum(y_pred[one_indices] == 0)/len(one_indices[0])
+        false_pos += np.sum(y_pred[zero_indices] == 1)/len(zero_indices[0])
+
+    #Average accuracy's and rates
     train_acc, test_acc = np.mean(Train_acc), np.mean(Test_acc)
+    false_neg, false_pos = 1/n*false_neg, 1/n*false_pos
 
     #Accuracy tables and plots
     print("Average Accuracy with split threshold = %.3f" % split)
     print("Training: %.3f" % train_acc)
     print("Testing: %.3f \n" % test_acc)
+    """
+    output:
+    Average Accuracy with split threshold = 0.500
+    Training: 0.781
+    Testing: 0.779
+    """
 
     plt.title("Prediction accuracy on train and test set split=%.3f" % split)
     plt.plot(np.arange(n), Train_acc, label="train", color="b")
@@ -120,24 +139,19 @@ if __name__ == '__main__':
     plt.legend(), plt.grid(), plt.show()
 
     #False-negative and false-positive error rates
-    y_pred, yt = np.ravel(p_test), np.ravel(y_test)
-    y_pred[y_pred >= 0.5] = 1   #predict
-    y_pred[y_pred < 0.5] = 0
+    print("False-neg. rate: %.3f" % false_neg)
+    print("False-pos. rate: %.3f" % false_pos)
+    """
+    output:
+    False-neg. rate: 0.305
+    False-pos. rate: 0.172
+    """
 
-    one_indices = np.where(yt==1)
-    zero_indices = np.where(yt==0)
-
-    one_error = np.sum(y_pred[one_indices] == 0)/len(one_indices[0])
-    zero_error = np.sum(y_pred[zero_indices] == 1)/len(zero_indices[0])
-
-    print("Class 1 error: %.3f" % one_error)
-    print("Class 0 error: %.3f" % zero_error)
-
-    #ROC curves
+    #ROC curves of last train_test_split sample
     p_test = np.ravel(p_test)
     y_probas = np.zeros((len(p_test), 2))
     y_probas[:, 0] = 1 - p_test
     y_probas[:, 1] = p_test
 
     plot_cumulative_gain(y_true=y_test, y_probas=y_probas)
-    #plt.show()
+    plt.show()

@@ -21,8 +21,8 @@ def regressor_grid_search(X, z, f, etas, lmbds, activation="sigmoid", cost="mse"
 
     for i, eta in enumerate(etas):
         for j, lmbd in enumerate(lmbds):
-            nn = NeuralNetwork(X_train, z_train, type="regression", eta=eta, lmbd=lmbd, n_hidden_neurons=100,
-                            n_hidden_layers=4, activation=activation, cost=cost, epochs=200)
+            nn = NeuralNetwork(X_train, z_train, type="regression", eta=eta, lmbd=lmbd, n_hidden_neurons=50,
+                            n_hidden_layers=2, activation=activation, cost=cost, epochs=200)
             nn.train()
             NN[i, j] = nn
 
@@ -39,9 +39,9 @@ def regressor_grid_search(X, z, f, etas, lmbds, activation="sigmoid", cost="mse"
     return NN, test_mse, train_mse
 
 if __name__ == '__main__':
-    #Sigmoid, mse, grid search /w plots
+    #tanh, mse, grid search /w plots
     X, z = frankeData()
-    activation, cost = "sigmoid", "mse"
+    activation, cost = "tanh", "mse"
     etas, lmbds = np.logspace(-5, 0, 6), np.logspace(-5, 0, 6)
     NN, test_mse, train_mse = regressor_grid_search(X, z, f, etas, lmbds, activation=activation, cost=cost)
 
@@ -59,12 +59,29 @@ if __name__ == '__main__':
     ax.set_xlabel("$\lambda$")
     plt.show()
 
-    #Best result plot (tanh mse)
-    X, z = frankeData()
-    X_train, X_test, z_train, z_test = train_test_split(X, z, test_size=0.2, shuffle=True, random_state=1)
-    nn = NeuralNetwork(X_train, z_train, type="regression", eta=1e-4, lmbd=1e-1, n_hidden_neurons=50,
-               n_hidden_layers=2, epochs=200, activation="tanh", cost="mse")
-    nn.train()
+    #Average mse verification of best result (tanh)
+    n, mse = 5, 0
+    for i in range(1,n+1):
+        X_train, X_test, z_train, z_test = train_test_split(X, z, test_size=0.2, shuffle=True, random_state=i)
+        nn = NeuralNetwork(X_train, z_train, type="regression", eta=1e-4, lmbd=1e-1, n_hidden_neurons=50,
+        n_hidden_layers=2, epochs=200, activation="tanh", cost="mse")
+
+        nn.train()
+        z_test_pred = nn.predict(X_test)
+        f_test = f(X_test[:, 0], X_test[:, 1])
+
+        mse += mean_squared_error(np.ravel(f_test), np.ravel(z_test_pred))
+
+    mse = 1/n*mse
+
+    print("avg-mse: %.5f" % mse)
+    """
+    output:
+    avg-mse: 0.01018
+    """
+
+    #Best results plot (tanh)
+    nn = NN[1][4]
     z_pred = nn.predict(X)
 
     x, y = X[:, 0].reshape(50, 50), X[:, 1].reshape(50, 50)

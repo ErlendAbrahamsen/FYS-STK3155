@@ -332,3 +332,8 @@ if __name__ == '__main__':
     false_neg_rate = fn/(fn+tp)
     print("False-neg. rate: %.3f" % false_neg_rate)
     print("False-pos. rate: %.3f" % false_pos_rate)
+    """
+    output:
+    False-neg. rate: 0.239
+    False-pos. rate: 0.182
+    """
