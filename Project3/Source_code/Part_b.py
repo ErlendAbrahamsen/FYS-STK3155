@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 
 def MyPlot(x, y, z, title="", shrink=0.5, aspect=4):
     """
-    3D plotting method with features fitting our situation
+    Simple 3d plot method for analytic solution of 1d-Heat eq.
     """
 
     #Set up a 3d plot
@@ -15,21 +15,22 @@ def MyPlot(x, y, z, title="", shrink=0.5, aspect=4):
     surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
                             linewidth=0, antialiased=False)
 
-    labels = (ax.set_xlabel("x-axis"), ax.set_ylabel("y-axis"),
-                ax.set_zlabel("z-axis"), ax.set_title(title))
+    labels = (ax.set_xlabel("Pos. (x)"), ax.set_ylabel("Time. (t)"),
+                ax.set_zlabel("Temp. (u)"), ax.set_title(title))
 
     fig.colorbar(surf, shrink=shrink, aspect=aspect)
 
     return True
 
-def finit_diff(dx=1e-1):
+def finit_diff(dx=1e-1, ratio=0.5):
     """
     Forward time centered space finit differences of
-    simple 1d heat eq /w given conditions
+    simple 1d heat eq /w given conditions.
+    Returns 1d-arrays x, y and 2d-array u.
     """
 
-    x_stop, t_stop = 1, 5
-    dt = dx**2/2
+    x_stop, t_stop = 1, 2
+    dt = ratio*dx**2
     d = dt/dx**2
     d2 = 1 - 2*d
 
@@ -45,33 +46,75 @@ def finit_diff(dx=1e-1):
 
     return x, t, u
 
-def u(x, t):
+def stability_ratio_error_analysis(n=5, max_ratio=0.5, dx=1e-1):
+    """
+    Computes MSE(analytic, finit_diff) for
+    ratio values [max_ratio/n, ..., max_ratio].
+    Returns list ratios and MSE.
+    """
+
+    MSE = []
+    ratios = np.linspace(max_ratio/n, max_ratio, n)
+    for ratio in ratios:
+        x, t, u_approx = finit_diff(dx=dx, ratio=ratio)
+        x_, t_ = np.meshgrid(x, t)
+        u_analytic = u_true(x_, t_).T
+
+        MSE.append(mean_squared_error(np.ravel(u_analytic), np.ravel(u_approx)))
+
+    return ratios, MSE
+
+def u_true(x, t):
     """
     Continouse analytic solution of 1d heat
-    with given conditions
+    with given conditions.
     """
 
     return np.exp(-np.pi**2*t)*np.sin(np.pi*x)
 
 if __name__ == '__main__':
-    x, t, u_approx = finit_diff(dx=1e-2)
+    ### MSE for different ratios (dt/dx^2 = ratio) ###
+    dx1, dx2 = 1e-1, 1e-2
+    ratios, MSE1 = stability_ratio_error_analysis(n=5, dx=dx1)
+    plt.title("$MSE$ errors for different ratios")
+    plt.plot(ratios, 1e3*np.array(MSE1), label="$\Delta x = %.1e$" % dx1)
+    plt.xlabel("$=\Delta t / \Delta x^2$"), plt.ylabel("$10^{-3}$ $MSE$")
+    plt.show()
+
+    ratios, MSE2 = stability_ratio_error_analysis(max_ratio=0.6, n=6, dx=dx1)
+    plt.title("Breaking stability criterion")
+    plt.plot(ratios, np.array(MSE2), label="$\Delta x = %.1e$" % dx1)
+    plt.xlabel("$=\Delta t / \Delta x^2$"), plt.ylabel("$MSE$")
+    plt.show()
+
+    ### Analytic and finit diff start state (t=0) ###
+    dx = dx1
+    x, t, u_approx = finit_diff(dx=dx)
     x_, t_ = np.meshgrid(x, t)
-    u_true = u(x_, t_).T
+    u_analytic = u_true(x_, t_).T
 
-    mse = mean_squared_error(np.ravel(u_true), np.ravel(u_approx))
+    mse = mean_squared_error(np.ravel(u_analytic), np.ravel(u_approx))
 
-    t_ = 0.2
-    plt.title("Time t=%.1f" % t_)
-    plt.plot(x, u_true[:, np.where(t==t_)[0]], label="analytic-solution")
-    plt.plot(x, u_approx[:, np.where(t==t_)[0]], label="finit-difference")
-    plt.xlabel("x-axis"), plt.ylabel("u-axis"), plt.text(0.8, 0.8, ("mse=%.3e" % mse))
+    t_index = 0
+    plt.title("Start-state $(t=%.1f)$ with $\Delta x = %.1e$" % (t[t_index], dx))
+    plt.plot(x, u_approx[:, t_index], label="finit-diff")
+    plt.plot(x, u_analytic[:, t_index], "--", color="r", label="analytic-solution")
+    plt.xlabel("x-axis"), plt.ylabel("u-axis"), plt.text(0.35, 0, ("$MSE_{total}=%.2e$" % mse))
+    plt.xlim(-0.05, 1.05), plt.ylim(-0.05, 1.05)
     plt.legend(), plt.show()
 
-    ##print(np.shape(x))
-    #x_, t_ = x[:11, :], t[:11, :]
-    #u_true_, u_approx_ = u_true[:11, :11], u_approx[:11, :11]
-    #print(np.shape(u_true_))
-    #MyPlot(x_, t_, u_true_, title="analytic-solution")
-    #MyPlot(x_, t_, u_approx_, title="approx-solution")
-    #plt.xlabel("x-position"), plt.ylabel("t-time")
-    #plt.show()
+    ### Analytic vs finit-diff at fixed time###
+    t_index = 5
+    plt.title("$t=%.2f$ with $\Delta x = %.1e$" % (t[t_index], dx))
+    plt.plot(x, u_approx[:, t_index], label="Finit-diff")
+    plt.plot(x, u_analytic[:, t_index], "--", color="r", label="True-value")
+    plt.xlabel("x-axis"), plt.ylabel("u-axis"), plt.text(0.35, 0.3, ("$MSE_{total}=%.2e$" % mse))
+    plt.xlim(-0.05, 1.05), plt.ylim(-0.05, 1.05)
+    plt.legend(), plt.show()
+
+    ### Analytic solution plot ###
+    x = np.linspace(0, 1, 50)
+    x, t = np.meshgrid(x, x)
+    u = u_true(x, t)
+    MyPlot(x, t, u, title="Analytic 1D-Heat solution")
+    plt.show()
