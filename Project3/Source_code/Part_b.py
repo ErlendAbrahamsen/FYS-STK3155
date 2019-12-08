@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
@@ -32,14 +33,16 @@ def finit_diff(dx=1e-1, ratio=0.5, t_stop=1):
 
     x_stop, t_stop = 1, t_stop
     dt = ratio*dx**2
-    d = dt/dx**2
+    d = ratio
     d2 = 1 - 2*d
 
     x = np.linspace(0, x_stop, int(1+x_stop/dx))
-    t = np.linspace(0, t_stop, int(1+x_stop/dt))
+    t = np.linspace(0, t_stop, int(1+t_stop/dt))
 
     u = np.zeros((x.size, t.size))
-    u[:, 0] = np.sin(np.pi*x)
+    u[:, 0] = np.sin(np.pi*x) #Initial condition
+    u[0, :] = 0               #Boundary condition
+    u[-1, :] = 0              #Boundary condition
 
     for j in range(len(t)-1):
         for i in range(1, len(x)-1):
@@ -61,7 +64,7 @@ def grid_analysis(t_stops, ratios, dx=1e-1):
             u_analytic = u_true(x_, t_).T
             MSE[i, j] = mean_squared_error(np.ravel(u_analytic), np.ravel(u_approx))
 
-    return 10**3*MSE
+    return MSE
 
 def u_true(x, t):
     """
@@ -72,20 +75,23 @@ def u_true(x, t):
     return np.exp(-np.pi**2*t)*np.sin(np.pi*x)
 
 if __name__ == '__main__':
-    #### Grid analysis plot ###
+    ### Grid analysis plot ###
     dx1, dx2 = 1e-1, 1e-2
     t_stops = [0.5, 1.0, 1.5, 2.0]
-    ratios = [0.2, 0.3, 0.4, 0.5]
+    ratios = [0.1, 0.2, 0.3, 0.4, 0.5]
 
-    MSE = grid_analysis(t_stops, ratios, dx=dx1)
+    dx = dx1
+    MSE = grid_analysis(t_stops, ratios, dx=dx)
     fig, ax = plt.subplots()
-    sns.heatmap(MSE, annot=True, ax=ax, cmap="viridis", fmt=".3g",
-                xticklabels=ratios, yticklabels=t_stops)
-    ax.set_title("$10^{-3}$ $MSE_{total}$")
+    f = mticker.ScalarFormatter(useOffset=False, useMathText=True)
+    g = lambda x, pos: "${}$".format(f._formatSciNotation("%.10e" % x))
+    sns.heatmap(MSE, annot=True, ax=ax, cmap="viridis", fmt=".2e",
+                xticklabels=ratios, yticklabels=t_stops, cbar_kws={"format": mticker.FuncFormatter(g)})
+    ax.set_title("$MSE_{total}$ ($\Delta x = %.1e$)" % dx)
     ax.set_xlabel("$\Delta t / \Delta x^2$"), ax.set_ylabel("$t_{stop}$")
     plt.show()
 
-    ### Analytic vs finit-diff at two fixed times###
+    ### Analytic vs finit-diff at fixed time###
     dx = dx1
     x, t, u_approx = finit_diff(dx=dx, ratio=0.5, t_stop=2)
     x_, t_ = np.meshgrid(x, t)
@@ -93,19 +99,17 @@ if __name__ == '__main__':
 
     mse = mean_squared_error(np.ravel(u_analytic), np.ravel(u_approx))
 
-    t_index = 5
-    plt.title("Start-state $(t=%.2f)$ with $\Delta x = %.1e$" % (t[t_index], dx))
-    plt.plot(x, u_approx[:, t_index], label="finit-diff")
-    plt.plot(x, u_analytic[:, t_index], ".", color="r", label="analytic-solution")
-    plt.xlabel("x-axis"), plt.ylabel("u-axis"), plt.text(0.35, 0, ("$MSE_{total}=%.2e$" % mse))
-    plt.xlim(-0.05, 1.05), plt.ylim(-0.05, 1.05)
-    plt.legend(), plt.show()
+    t_index = 60
+    fig, ax = plt.subplots()
+    plt.title("$t=%.2f$ ($\Delta x = %.1e$)" % (t[t_index], dx))
+    ax.plot(x, u_approx[:, t_index], label="Finit-diff")
+    ax.plot(x, u_analytic[:, t_index], ".", color="r", label="True-value")
+    mse_local = mean_squared_error(np.ravel(u_analytic[:, t_index]), np.ravel(u_approx[:, t_index]))
 
-    t_index = 45
-    plt.title("$t=%.2f$ with $\Delta x = %.1e$" % (t[t_index], dx))
-    plt.plot(x, u_approx[:, t_index], label="Finit-diff")
-    plt.plot(x, u_analytic[:, t_index], ".", color="r", label="True-value")
-    plt.xlabel("x-axis"), plt.ylabel("u-axis"), plt.text(0.35, 0.3, ("$MSE_{total}=%.2e$" % mse))
+    #ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2e'))
+    plt.xlabel("x-axis"), plt.ylabel("u-axis")
+    plt.text(0.35, 0.25, ("$MSE_{TOTAL}=%.2e$" % mse))
+    plt.text(0.35, 0.15, ("$MSE_{LOCAL}=%.2e$" % mse_local))
     plt.xlim(-0.05, 1.05), plt.ylim(-0.05, 1.05)
     plt.legend(), plt.show()
 
