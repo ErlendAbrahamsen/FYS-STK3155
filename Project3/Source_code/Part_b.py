@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib import cm
@@ -99,7 +100,7 @@ if __name__ == '__main__':
 
     mse = mean_squared_error(np.ravel(u_analytic), np.ravel(u_approx))
 
-    t_index = 60
+    t_index = 70
     fig, ax = plt.subplots()
     plt.title("$t=%.2f$ ($\Delta x = %.1e$)" % (t[t_index], dx))
     ax.plot(x, u_approx[:, t_index], label="Finit-diff")
@@ -119,3 +120,9 @@ if __name__ == '__main__':
     u = u_true(x, t)
     MyPlot(x, t, u, title="Analytic 1D-Heat solution")
     plt.show()
+
+    ### Test time ###
+    t0 = time.time()
+    x, t, u_approx = finit_diff(dx=dx2, ratio=0.5, t_stop=2)
+    t1 = time.time()
+    print("Finit diff. time: %f s" % (t1-t0))
