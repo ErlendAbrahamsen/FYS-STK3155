@@ -12,17 +12,21 @@ class HeatLearner:
     Class designed to solve 1d heat PDE using tensorflow functionality.
     Uses Adam optimizer.
 
-    Different activations (from tensorflow) can be set in init.
-    Can input custom made loss function custom_loss in init.:
+    Different hidden activation functions and output functions can be set in init.
+    Can input costom made loss function.
+    Uses Adam or SGD optimizer. Can set learning rate eta with SGD.
     """
 
-    def __init__(self, x, t, layer_dimensions, activation=tf.nn.sigmoid, custom_loss=False):
+    def __init__(self, x, t, layer_dimensions, activation=tf.nn.sigmoid, out=tf.nn.sigmoid,
+                 custom_loss=False, optimizer="Adam", eta=1e-2):
         """
         x, t is meshgrid and/or even lengths.
         layer_dimensions is list of dimensions (int) [#input, #hidden, #out].
-        activation = tf.nn.sigmoid / tf.nn.relu etc.
+        activation and/or out = tf.nn.sigmoid / tf.nn.relu etc.
         custom_loss to replace loss().
         custom_loss must input tensorflow objects x, t, u_hat.
+        optimizer is Adam or SGD.
+        eta is learning_rate to be used in SGD.
         """
 
         self.x = tf.convert_to_tensor(x.reshape(-1, 1), dtype=tf.float64)
@@ -30,6 +34,7 @@ class HeatLearner:
 
         self.layer_dimensions = layer_dimensions
         self.activation = activation
+        self.out = out
         self.create_weights_biases(eps=1e-2)
 
         if custom_loss:
@@ -38,7 +43,12 @@ class HeatLearner:
             self.custom_loss = False
 
         self.LOSS = self.loss(self.x, self.t, self.u_hat)
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.LOSS)
+
+        if optimizer == "Adam":
+            self.optimizer = tf.train.AdamOptimizer().minimize(self.LOSS)
+        elif optimizer == "SGD":
+            self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=eta).minimize(self.LOSS)
+
         self.sess = tf.Session()
         init = tf.global_variables_initializer()
         self.sess.run(init)
@@ -50,6 +60,7 @@ class HeatLearner:
         bias initiliazed to constant eps.
         """
 
+        tf.set_random_seed(1)
         layer_dimensions = self.layer_dimensions
 
         weights, biases = [], []
@@ -75,8 +86,7 @@ class HeatLearner:
             a = self.activation(tf.add(tf.matmul(a, W), b))
 
         W, b = self.weights[-1], self.biases[-1]
-        self.dnn_out = tf.nn.sigmoid(tf.add(tf.matmul(a, W), b))
-        #self.dnn_out = tf.add(tf.matmul(a, W), b)
+        self.dnn_out = self.out(tf.add(tf.matmul(a, W), b))
 
         return self.dnn_out
 
@@ -132,28 +142,43 @@ class HeatLearner:
 
 if __name__ == '__main__':
     ### Training ###
-    tf.set_random_seed(1)
     n_train = 10
     x = np.linspace(0, 1, n_train)
     t = np.linspace(0, 2, n_train)
     x, t = np.meshgrid(x, t)
 
     #Layer architecture
-    layer_dimensions = [2, 200, 200, 200, 200, 200, 1]
-    dnn = HeatLearner(x, t, layer_dimensions, activation=tf.nn.sigmoid)
+    layer_dimensions = [2, 130, 130, 130, 130, 1]
+    dnn = HeatLearner(x, t, layer_dimensions, activation=tf.nn.sigmoid, out=tf.nn.sigmoid)
     dnn.train(num_iter=200)
 
-    ### Predicting and plotting ###
-    n = 100
+    ### Predicting and 3d plotting ###
+    n = 200
     x = np.linspace(0, 1, n)
-    t = np.linspace(0, 1, n)
+    t = np.linspace(0, 2, n)
     x, t = np.meshgrid(x, t)
-    u_hat = dnn.predict(x, t)
+    u_hat = dnn.predict(x, t) #u_hat
 
-    u_true = u_true(x.reshape(-1, 1), t.reshape(-1, 1))
-    true_MSE = skl.metrics.mean_squared_error(np.ravel(u_true), np.ravel(u_hat))
+    u_correct = u_true(x.reshape(-1, 1), t.reshape(-1, 1))
+    true_MSE = skl.metrics.mean_squared_error(np.ravel(u_correct), np.ravel(u_hat))
     print("True MSE:", true_MSE)
 
     title = "%d Hidden layers trained on %dX%d grid. \n $MSE_{total}=%.3e$" % (len(layer_dimensions)-2, n_train, n_train, true_MSE)
-    MyPlot(x.reshape((n, n)), t.reshape((n, n)), u_hat.reshape((n, n)), title=title)
+    x, t = x.reshape((n, n)), t.reshape((n, n))
+    u_correct, u_hat = u_correct.reshape((n, n)), u_hat.reshape((n, n))
+    MyPlot(x, t, u_hat, title=title)
     plt.show()
+
+    ### 2d plotting ###
+    m = 10 #t index
+    fig, ax = plt.subplots()
+    plt.title("$t=%.2f$ Prediction w/ %dX%d grid" % (t[m][0], n, n))
+    ax.plot(x[m, :], u_hat[m, :], label="DNN")
+    ax.plot(x[m, :], u_correct[m, :], "-", color="r", label="True-value")
+    mse_local = skl.metrics.mean_squared_error(np.ravel(u_hat[m, :]), np.ravel(u_correct[m, :]))
+
+    plt.xlabel("x-axis"), plt.ylabel("u-axis")
+    plt.text(0.35, 0.25, ("$MSE_{TOTAL}=%.2e$" % true_MSE))
+    plt.text(0.35, 0.15, ("$MSE_{LOCAL}=%.2e$" % mse_local))
+    plt.xlim(-0.05, 1.05), plt.ylim(-0.05, 1.05)
+    plt.legend(), plt.show()
