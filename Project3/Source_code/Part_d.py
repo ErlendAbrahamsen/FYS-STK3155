@@ -7,7 +7,7 @@ from tensorflow.losses import mean_squared_error
 from tensorflow import keras
 
 seed = 1
-n, m = 2, 10
+n, m = 3, 100
 def eigen_ODE_loss(x0, t, x_hat, l=n*m, seed=seed):
     """
     (l=n*m)
@@ -48,7 +48,7 @@ def eigen_ODE_loss(x0, t, x_hat, l=n*m, seed=seed):
 if __name__ == '__main__':
     tf.set_random_seed(1)
     x0 = np.random.normal(0, 1, n)  #x0(t) guess
-    t = np.linspace(0, 1, m)      #times
+    t = np.linspace(0, 1, m)        #times
     x0, t = np.meshgrid(x0, t)
 
     #Random symmetrical (n, n) (normal distb.)
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #Layer architecture and training
     layer_dimensions = [2, 50, 50, 50, 50, 1]
     dnn = HeatLearner(x0, t, layer_dimensions, activation=tf.nn.tanh, out=tf.nn.tanh,
-                      custom_loss=eigen_ODE_loss, optimizer="SGD", eta=1e-10)
+                      custom_loss=eigen_ODE_loss, optimizer="SGD", eta=1e-12)
     dnn.train(num_iter=100)
     x = dnn.predict(x0, t)
 
@@ -76,6 +76,6 @@ if __name__ == '__main__':
     plt.title("ODE predicted $\lambda$ vs Numpy computed $\lambda$ \n $random_{seed}=%d$" % seed)
     plt.plot(Lmbd, label="Predicted $\lambda$")
     plt.plot(eig_val, "o", c="r", label="True $\lambda$")
-    plt.text(4, 0.4, ("$Error_{end}=%.2e$" % abs_end_error))
+    plt.text(0.4, 0.4, ("$Error_{end}=%.2e$" % abs_end_error))
     plt.xlabel("time steps"), plt.ylabel("Eig. value $\lambda$")
     plt.legend(), plt.show()
