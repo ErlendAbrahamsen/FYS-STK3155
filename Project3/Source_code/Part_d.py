@@ -10,7 +10,6 @@ seed = 1
 n, m = 3, 100
 def eigen_ODE_loss(x0, t, x_hat, l=n*m, seed=seed):
     """
-    (l=n*m)
     Custom loss function to be used in HeatLearner class.
     ( HeatLearner(custom_loss=eigen_ODE_loss) )
 

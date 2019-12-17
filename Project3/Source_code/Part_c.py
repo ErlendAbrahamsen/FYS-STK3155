@@ -10,7 +10,6 @@ from tensorflow import keras
 class HeatLearner:
     """
     Class designed to solve 1d heat PDE using tensorflow functionality.
-    Uses Adam optimizer.
 
     Different hidden activation functions and output functions can be set in init.
     Can input costom made loss function.
