@@ -1,7 +1,7 @@
 ### Erlend Abrahamsen FYS-STK3155 Project 1. ###
 - The goal is to analyze variouse regression methods on noise generated data (https://www.sfu.ca/~ssurjano/franke2d.html + noise)
-
 - See Report.pdf for the report on this project.
+- See Project1.pdf for project task details.
 
 ### Structure of repo: ###
 Files:
