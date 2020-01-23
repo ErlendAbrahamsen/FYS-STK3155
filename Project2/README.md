@@ -1,6 +1,6 @@
 ### Erlend Abrahamsen FYS-STK3155 Project 2. ###
 - See Project2.pdf for project task details.
-- See Report.pdf for the report on this project.
+- See Report.pdf for the report/answer on this project.
 - The goal is to use machine learning models for predicting if bank customer is credible for loan based of real data taken from a bank in Taiwan. Also try regression with neural network on generated data with noise.
 
 ### Structure of repo: ###
