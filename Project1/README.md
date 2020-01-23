@@ -6,7 +6,8 @@ Erlend Abrahamsen FYS-STK3155 Project 1.
 ### Structure of repo: ###
 Files:  
 
-Project1.pdf (Project1 tasks/description), Report.pdf
+Project1.pdf (Project1 tasks/description)
+Report.pdf
 
 Folder Source_code:  
 
